@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/icza/s2prot/build"
+	"github.com/stego-research/s2prot/build"
 )
 
 var (

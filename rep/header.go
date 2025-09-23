@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/icza/s2prot"
+	"github.com/stego-research/s2prot"
 )
 
 // Header describes the replay header (replay game version and length).

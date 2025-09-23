@@ -6,7 +6,7 @@ Types describing the init data (the initial lobby).
 
 package rep
 
-import "github.com/icza/s2prot"
+import "github.com/stego-research/s2prot"
 
 // InitData describes the init data (the initial lobby).
 type InitData struct {
@@ -637,7 +637,7 @@ func (u *UserInitData) ToonHandle() string {
 	return u.Stringv("toonHandle")
 }
 
-//MMR returns the mmr for the handle if set
+// MMR returns the mmr for the handle if set
 func (u *UserInitData) MMR() int64 {
 	return u.Int("scaledRating")
 }

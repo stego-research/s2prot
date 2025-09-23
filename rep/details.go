@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/icza/s2prot"
+	"github.com/stego-research/s2prot"
 )
 
 // Details describles the game details (overall replay details).
@@ -261,7 +261,8 @@ func (t *Toon) URL() string {
 // String returns a string representation of the Toon, the same format as used in
 // InitData["lobbyState"]["slots"]["toonHandle"]:
 //
-//     regionId-programId-reamId-playerId
+//	regionId-programId-reamId-playerId
+//
 // Using value receiver as Player.Toon is not a pointer (and so printing Player.Toon will call this method).
 func (t Toon) String() string {
 	return fmt.Sprintf("%d-%s-%d-%d", t.RegionID(), t.ProgramID(), t.RealmID(), t.ID())

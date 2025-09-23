@@ -11,15 +11,15 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/icza/s2prot"
-	"github.com/icza/s2prot/rep"
+	"github.com/stego-research/s2prot"
+	"github.com/stego-research/s2prot/rep"
 )
 
 const (
 	appName    = "s2prot"
 	appVersion = "v1.5.1"
 	appAuthor  = "Andras Belicza"
-	appHome    = "https://github.com/icza/s2prot"
+	appHome    = "https://github.com/stego-research/s2prot"
 )
 
 // Flag variables

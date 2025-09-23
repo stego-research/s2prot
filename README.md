@@ -1,26 +1,26 @@
 # s2prot
 
-![Build Status](https://github.com/icza/s2prot/actions/workflows/go.yml/badge.svg)
-[![Go Reference](https://pkg.go.dev/badge/github.com/icza/s2prot.svg)](https://pkg.go.dev/github.com/icza/s2prot)
-[![GoDoc](https://godoc.org/github.com/icza/s2prot?status.svg)](https://godoc.org/github.com/icza/s2prot)
-[![Go Report Card](https://goreportcard.com/badge/github.com/icza/s2prot)](https://goreportcard.com/report/github.com/icza/s2prot)
+![Build Status](https://github.com/stego-research/s2prot/actions/workflows/go.yml/badge.svg)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot.svg)](https://pkg.go.dev/github.com/stego-research/s2prot)
+[![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
+[![Go Report Card](https://goreportcard.com/badge/github.com/stego-research/s2prot)](https://goreportcard.com/report/github.com/stego-research/s2prot)
 [![codecov](https://codecov.io/gh/icza/s2prot/branch/master/graph/badge.svg)](https://codecov.io/gh/icza/s2prot)
 
 Package `s2prot` is a decoder/parser of Blizzard's StarCraft II replay file format (*.SC2Replay).
 
 `s2prot` processes the "raw" data that can be decoded from replay files using an MPQ parser
-such as [github.com/icza/mpq](https://github.com/icza/mpq).
+such as [github.com/stego-research/mpq](https://github.com/stego-research/mpq).
 
 The package is designed to be used by other packages or apps, and is safe for concurrent use.
 There is also an example CLI app that can be used standalone.
 
 Parses all versions that were written with retail versions of StarCraft II (and some beta versions too).
 
-_Check out the sister project to parse StarCraft: Brood War replays: [screp](https://github.com/icza/screp)_
+_Check out the sister project to parse StarCraft: Brood War replays: [screp](https://github.com/stego-research/screp)_
 
 ## Using the `s2prot` CLI app
 
-There is a command line application in the [cmd/s2prot](https://github.com/icza/s2prot/tree/master/cmd/s2prot) folder
+There is a command line application in the [cmd/s2prot](https://github.com/stego-research/s2prot/tree/master/cmd/s2prot) folder
 which can be used to parse and display information about a single replay file.
 
 The extracted data is displayed using JSON representation.
@@ -42,22 +42,22 @@ Or simply:
 
 ## High-level Usage
 
-[![GoDoc](https://godoc.org/github.com/icza/s2prot/rep?status.svg)](https://godoc.org/github.com/icza/s2prot/rep)
+[![GoDoc](https://godoc.org/github.com/stego-research/s2prot/rep?status.svg)](https://godoc.org/github.com/stego-research/s2prot/rep)
 
 The package `s2prot/rep` provides enumerations and types to model data structures
 of StarCraft II replays (*.SC2Replay) decoded by the `s2prot` package. These provide a higher level overview
 and much easier to use.
 
-The below example code can be found in https://github.com/icza/s2prot/blob/master/_example/rep.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/rep.go.
 
 Install the latest version of the library:
 ```
-go get -u github.com/icza/s2prot/rep@master
+go get -u github.com/stego-research/s2prot/rep@master
 ```
 
 To open and parse a replay:
 
-	import "github.com/icza/s2prot/rep"
+	import "github.com/stego-research/s2prot/rep"
 
 	r, err := rep.NewFromFile("../../mpq/reps/lotv.SC2Replay")
 	if err != nil {
@@ -129,13 +129,13 @@ Output:
 
 ## Low-level Usage
 
-[![GoDoc](https://godoc.org/github.com/icza/s2prot?status.svg)](https://godoc.org/github.com/icza/s2prot)
+[![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
 
-The below example code can be found in https://github.com/icza/s2prot/blob/master/_example/s2prot.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/s2prot.go.
 
 To use `s2prot`, we need an MPQ parser to get content from a replay.
 
-	import "github.com/icza/mpq"
+	import "github.com/stego-research/mpq"
 
 	m, err := mpq.NewFromFile("../../mpq/reps/automm.SC2Replay")
 	if err != nil {
@@ -184,10 +184,10 @@ Which yields a JSON text similar to the one posted above (at High-level Usage).
 
 - s2protocol: Blizzard's reference implementation in python: https://github.com/Blizzard/s2protocol
 
-- s2protocol implementation of the Scelight project: https://github.com/icza/scelight/tree/master/src-app/hu/scelight/sc2/rep/s2prot
+- s2protocol implementation of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/s2prot
 
-- Replay model of the Scelight project: https://github.com/icza/scelight/tree/master/src-app/hu/scelight/sc2/rep/model
+- Replay model of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/model
 
 ## License
 
-Open-sourced under the [Apache License 2.0](https://github.com/icza/s2prot/blob/master/LICENSE).
+Open-sourced under the [Apache License 2.0](https://github.com/stego-research/s2prot/blob/master/LICENSE).

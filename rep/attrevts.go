@@ -6,7 +6,7 @@ Type describing the attributes events.
 
 package rep
 
-import "github.com/icza/s2prot"
+import "github.com/stego-research/s2prot"
 
 // Attribute ID constants
 const (

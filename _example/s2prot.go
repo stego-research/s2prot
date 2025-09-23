@@ -7,8 +7,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/icza/mpq"
-	"github.com/icza/s2prot"
+	"github.com/stego-research/mpq"
+	"github.com/stego-research/s2prot"
 )
 
 func main() {

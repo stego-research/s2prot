@@ -6,7 +6,7 @@ Type describing the game metadata (calculated, confirmed results).
 
 package rep
 
-import "github.com/icza/s2prot"
+import "github.com/stego-research/s2prot"
 
 // Metadata describes the game metadata (calculated, confirmed results).
 type Metadata struct {

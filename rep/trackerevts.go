@@ -9,7 +9,7 @@ package rep
 import (
 	"math"
 
-	"github.com/icza/s2prot"
+	"github.com/stego-research/s2prot"
 )
 
 const (
@@ -152,9 +152,9 @@ func isMainBuilding(unitTypeName string) bool {
 // in the range of 1..12.
 //
 // Examples:
-//  - PI/2 => 12 (o'clock)
-//  - 0 => 3 (o'clock)
-//  - PI => 9 (o'clock)
+//   - PI/2 => 12 (o'clock)
+//   - 0 => 3 (o'clock)
+//   - PI => 9 (o'clock)
 func angleToClock(angle float64) int32 {
 	// The algorithm below computes clock value in the range of 0..11 where
 	// 0 corresponds to 12.

@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/icza/s2prot/rep"
+	"github.com/stego-research/s2prot/rep"
 )
 
 func main() {
