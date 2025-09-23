@@ -1,2 +1,2 @@
-github.com/stego-research/mpq v0.0.0-20170726141842-266342679beb h1:OLavs+EztMBArVQ1ZJwlgNt473bp9RdS3bQ8U77tgtA=
-github.com/stego-research/mpq v0.0.0-20170726141842-266342679beb/go.mod h1:LaIKVZTaGmpMaf+t9PY1X9JyPv4BR0+/f6uKHvBWxfQ=
+github.com/stego-research/mpq v1.6.0 h1:FAK24y7O7HE+NCU8Ru1heqsfDAjXY0/4szHcpDEm4nE=
+github.com/stego-research/mpq v1.6.0/go.mod h1:26y+/scKow22La7dHzIDf+0+ARtRPk56Zd4zBhSlh0I=
