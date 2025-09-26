@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	// TrackerEventtIDPlayerStats is the ID of the Player Stats tracker event
-	TrackerEventtIDPlayerStats = 0
+	// TrackerEventIDPlayerStats is the ID of the Player Stats tracker event
+	TrackerEventIDPlayerStats = 0
 
 	// TrackerEventIDUnitBorn is the ID of the Unit Born tracker event
 	TrackerEventIDUnitBorn = 1
@@ -109,7 +109,7 @@ func (t *TrackerEvents) init(rep *Rep) {
 			}
 		}
 
-		if e.ID == TrackerEventtIDPlayerStats {
+		if e.ID == TrackerEventIDPlayerStats {
 			pid := e.Int("playerId")
 			st := pidStats[pid]
 			if st != nil {
