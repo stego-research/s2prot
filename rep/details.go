@@ -1,4 +1,4 @@
-// Package rep Types describing the game details (overall replay details). /*
+// Package rep provides types describing the game details (overall replay details).
 package rep
 
 import (
