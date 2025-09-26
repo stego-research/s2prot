@@ -12,7 +12,7 @@ The package s2prot/rep provides enumerations and types to model data structures
 of StarCraft II replays (*.SC2Replay) decoded by the s2prot package. These provide a higher level overview
 and much easier to use.
 
-The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/rep.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/main/_example/rep.go.
 
 To open and parse a replay:
 
@@ -88,7 +88,7 @@ Output:
 
 # Low-level Usage
 
-The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/s2prot.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/main/_example/s2prot.go.
 
 To use s2prot, we need an MPQ parser to get content from a replay.
 
@@ -141,8 +141,8 @@ Which yields a JSON text similar to the one posted above (at High-level Usage).
 
 - s2protocol: Blizzard's reference implementation in python: https://github.com/Blizzard/s2protocol
 
-- s2protocol implementation of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/s2prot
+- s2protocol implementation of the Scelight project: https://github.com/icza/scelight/tree/master/src-app/hu/scelight/sc2/rep/s2prot
 
-- Replay model of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/model
+- Replay model of the Scelight project: https://github.com/stego-research/icza/tree/master/src-app/hu/scelight/sc2/rep/model
 */
 package s2prot
