@@ -31,7 +31,8 @@ func (b *bitPackedBuff) byteAlign() {
 
 // readBits1 reads 1 bit and returns true if the bit is 1, and returns false if the bit is 0.
 // This method is more efficient than but has the same effect as the code:
-//     readBits(1) != 0
+//
+//	readBits(1) != 0
 func (b *bitPackedBuff) readBits1() bool {
 	// No need to check endianness, we only need 1 bit (it can't be split in multiple bytes)
 
@@ -51,7 +52,8 @@ func (b *bitPackedBuff) readBits1() bool {
 
 // readBits8 reads 8 bits and returns it as a byte.
 // This method is more efficient than but has the same effect as the code:
-//     readBits(8)
+//
+//	readBits(8)
 func (b *bitPackedBuff) readBits8() (r byte) {
 	// No need to update b.cacheBits because we read 8 bits (and would be the same)
 
@@ -111,8 +113,8 @@ func (b *bitPackedBuff) readBits(n byte) int64 {
 
 // readBitsBigByte returns a number constructed from the next n bits, using big-endian byte order.
 // This is a highly optimized version for a special and frequent case of:
-//     - n must be a multiple of 8 and must be greater than 0
-//     - cache must not be empty (cacheBits != 0).
+//   - n must be a multiple of 8 and must be greater than 0
+//   - cache must not be empty (cacheBits != 0).
 func (b *bitPackedBuff) readBitsBigByte(n byte) (value int64) {
 	// Cache bits
 	value = int64(b.cache) // no need to mask, we need all cache bits
