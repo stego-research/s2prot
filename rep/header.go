@@ -39,10 +39,22 @@ func (h *Header) Loops() int64 {
 	return h.Int("elapsedGameLoops")
 }
 
-// Duration returns the game duration.
+// Duration returns the game duration. For "faster" game mode, this is not quite accurate (i.e. for multiplayer).
 func (h *Header) Duration() time.Duration {
 	// 1 second = 16 loops => 1 loop = 1/16 second = 62,500,000 ns
 	return time.Duration(h.Loops() * 62500000)
+}
+
+// FasterDuration returns the real-time duration for games played in "Faster" game mode.
+// This behavior may be somewhat inconsistent across game versions due to ScaledTime and other changes, so
+// use caution and understand the workings before use.
+func (h *Header) FasterDuration() time.Duration {
+	// Faster runs at 1.4x speed, so 16 ticks per second becomes 22.4 ticks per second.
+	// This can also be expressed as one tick in faster mode = 1/1.4 seconds.
+	// Therefore, 1/16s / 1.4 =
+	// 1 second = 22.4 loops => 1 loop = 1/22.4 second = ~0.0446s = 44642857.1429ns
+	// Sanity check: 16 / 22.4 = 44642857 / 62500000 = 0.714....
+	return time.Duration(h.Loops() * 44642857)
 }
 
 // Signature returns the header signature.
@@ -66,7 +78,7 @@ func (h *Header) DataBuildNum() int64 {
 	return h.Int("dataBuildNum")
 }
 
-// NgdpRootKey returns the data ngdp root key.
+// NgdpRootKey returns the data ngdp (Blizzard Next Generation Distribution Pipeline) root key.
 func (h *Header) NgdpRootKey() string {
 	return h.Stringv("ngdpRootKey", "data")
 }

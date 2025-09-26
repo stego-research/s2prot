@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	//r, err := rep.NewFromFileEvts("../../mpq/reps/automm.SC2Replay", true, true, true)
+	//r, err := rep.NewFromFileEvents("../../mpq/reps/automm.SC2Replay", true, true, true)
 	r, err := rep.NewFromFile("../../mpq/reps/lotv.SC2Replay")
 	if err != nil {
 		fmt.Printf("Failed to open file: %v\n", err)
@@ -23,9 +23,9 @@ func main() {
 	fmt.Printf("Loops:          %d\n", r.Header.Loops())
 	fmt.Printf("Length:         %v\n", r.Header.Duration())
 	fmt.Printf("Map:            %s\n", r.Details.Title())
-	fmt.Printf("Game events:    %d\n", len(r.GameEvts))
-	fmt.Printf("Message events: %d\n", len(r.MessageEvts))
-	fmt.Printf("Tracker events: %d\n", len(r.TrackerEvts.Evts))
+	fmt.Printf("Game events:    %d\n", len(r.GameEvents))
+	fmt.Printf("Message events: %d\n", len(r.MessageEvents))
+	fmt.Printf("Tracker events: %d\n", len(r.TrackerEvents.Events))
 
 	fmt.Println("Players:")
 	for _, p := range r.Details.Players() {
@@ -36,5 +36,5 @@ func main() {
 
 	//fmt.Printf("%s\n", r.Details.String())
 	//fmt.Printf("%s\n", r.InitData.String())
-	//fmt.Printf("%s\n", r.AttrEvts.String())
+	//fmt.Printf("%s\n", r.AttributesEvents.String())
 }

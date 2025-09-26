@@ -1,9 +1,4 @@
-/*
-
-Types describing the game details (overall replay details).
-
-*/
-
+// Package rep Types describing the game details (overall replay details). /*
 package rep
 
 import (
@@ -14,12 +9,15 @@ import (
 	"github.com/stego-research/s2prot"
 )
 
-// Details describles the game details (overall replay details).
+// winFileTimeEpochDiff represents the difference between Windows FILETIME epoch (1601-01-01)
+// and Unix epoch (1970-01-01), in 100-nanosecond (10µs) ticks.
+const winFileTimeEpochDiff int64 = 116444736000000000
+
+// Details describes the game details (overall replay details).
 type Details struct {
 	s2prot.Struct
-
-	players      []Player       // Lazily initialized players
-	cacheHandles []*CacheHandle // Lazily initialized cache handles
+	players      []Player       // Lazily initialized players.
+	cacheHandles []*CacheHandle // Lazily initialized cache handles.
 }
 
 // Title returns the map name.
@@ -42,21 +40,21 @@ func (d *Details) ThumbnailFile() string {
 	return d.Stringv("thumbnail", "file")
 }
 
-// Time returns the replay date+time.
+// Time returns the replay date and time.
 func (d *Details) Time() time.Time {
-	// timeUTC is in 10 microsecond unit
-	return time.Unix(0, (d.Int("timeUTC")-116444736000000000)*100)
+	// timeUTC is in 10 microsecond units (100ns ticks).
+	return time.Unix(0, (d.Int("timeUTC")-winFileTimeEpochDiff)*100)
 }
 
-// TimeUTC returns the replay date+time - localOffset
+// TimeUTC returns the replay UTC date and time (local offset removed).
 func (d *Details) TimeUTC() time.Time {
-	// timeUTC is in 10 microsecond unit
-	return time.Unix(0, (d.Int("timeUTC")-116444736000000000-(d.Int("timeLocalOffset")))*100)
+	// timeUTC and timeLocalOffset are in 10 microsecond units (100ns ticks).
+	return time.Unix(0, (d.Int("timeUTC")-winFileTimeEpochDiff-d.Int("timeLocalOffset"))*100)
 }
 
-// TimeLocalOffset returns the local time offset of the playing who saved the replay.
+// TimeLocalOffset returns the local time offset of the player who saved the replay.
 func (d *Details) TimeLocalOffset() time.Duration {
-	// timeLocalOffset is in 10 microsecond unit
+	// timeLocalOffset is in 10 microsecond units (100ns ticks).
 	return time.Duration(d.Int("timeLocalOffset") * 100)
 }
 
@@ -69,7 +67,6 @@ func (d *Details) CacheHandles() []*CacheHandle {
 			d.cacheHandles[i] = newCacheHandle(ch.(string))
 		}
 	}
-
 	return d.cacheHandles
 }
 
@@ -103,7 +100,7 @@ func (d *Details) MapFileName() string {
 	return d.Stringv("mapFileName")
 }
 
-// MiniSave returns if mini save.
+// MiniSave returns whether this is a mini save.
 func (d *Details) MiniSave() bool {
 	return d.Bool("miniSave")
 }
@@ -113,7 +110,7 @@ func (d *Details) ModPaths() interface{} {
 	return d.Value("modPaths")
 }
 
-// RestartAsTransitionMap returns if restart as transition map.
+// RestartAsTransitionMap returns whether the map restarts as a transition map.
 func (d *Details) RestartAsTransitionMap() bool {
 	return d.Bool("restartAsTransitionMap")
 }
@@ -125,14 +122,15 @@ func (d *Details) Players() []Player {
 		d.players = make([]Player, len(players))
 		for i, pl := range players {
 			p := Player{Struct: pl.(s2prot.Struct)}
-			p.Name = strings.Replace(p.Stringv("name"), "<sp/>", "", -1)
+			// Remove inline <sp/> tokens from names (used as spacing markers).
+			rawName := p.Stringv("name")
+			p.Name = strings.ReplaceAll(rawName, "<sp/>", "")
 			p.Toon = Toon{Struct: p.Structv("toon")}
 			c := p.Structv("color")
 			p.Color = [4]byte{byte(c.Int("a")), byte(c.Int("r")), byte(c.Int("g")), byte(c.Int("b"))}
 			d.players[i] = p
 		}
 	}
-
 	return d.players
 }
 
@@ -151,22 +149,22 @@ func (d *Details) Matchup() string {
 	return string(m)
 }
 
-// Player (participant of the game). Includes computers players but excludes observers.
+// Player (participant of the game). Includes computer players but excludes observers.
 type Player struct {
 	s2prot.Struct
-
-	Name  string  // Name of the player. Contains optional clan tag.
-	Toon  Toon    // Toon of the player. This is a unique identifier.
-	Color [4]byte // Color of the player, ARGB components. A=255 means completely opaque, A=0 means completely transparent.
+	Name  string  // Name of the player. May contain an optional clan tag.
+	Toon  Toon    // Toon of the player. This is a unique identifier. Toon information inclueds
+	Color [4]byte // Color of the player, ARGB components. A=255 means opaque, A=0 means transparent.
 	race  *Race   // Lazily initialized race.
 }
 
-// RaceString returns the localized race string.
+// RaceString returns the localized (Player) race string.
 func (p *Player) RaceString() string {
 	return p.Stringv("race")
 }
 
-// Race returns the race.
+// Race returns the (Player) race by name, utilizing an enum lookup.
+// Possibly inconsistent depending on region, as this uses localized strings.
 func (p *Player) Race() *Race {
 	if p.race == nil {
 		p.race = raceFromLocalString(p.Stringv("race"))
@@ -180,7 +178,7 @@ func (p *Player) TeamID() int64 {
 	return p.Int("teamId")
 }
 
-// Result returns the game result.
+// Result returns the game result (Victory, Defeat, Tie, Unknown) Results
 func (p *Player) Result() *Result {
 	return resultByID(p.Int("result"))
 }
@@ -211,7 +209,8 @@ func (p *Player) Hero() string {
 	return p.Stringv("hero")
 }
 
-// Toon - a unique identifier (of a player)
+// Toon - a unique identifier (of a player).
+// It includes the region, program ID (i.e. S2=SC2), realm ID, and player ID.
 type Toon struct {
 	s2prot.Struct
 }
@@ -221,16 +220,19 @@ func (t *Toon) ID() int64 {
 	return t.Int("id")
 }
 
-// ProgramID returns the program ID, always "S2", leading zeros will be stripped.
-func (t *Toon) ProgramID() string {
-	// always "\0\0S2", strip leading zeros
-	s := t.Stringv("programId")
+// normalizeProgramID strips leading NUL bytes from a programId string.
+func normalizeProgramID(s string) string {
 	for i := 0; i < len(s); i++ {
 		if s[i] != 0 {
 			return s[i:]
 		}
 	}
 	return s
+}
+
+// ProgramID returns the program ID (typically "S2"), with leading NUL bytes stripped.
+func (t *Toon) ProgramID() string {
+	return normalizeProgramID(t.Stringv("programId"))
 }
 
 // RealmID returns the realm ID.
@@ -248,12 +250,12 @@ func (t *Toon) RegionID() int64 {
 	return t.Int("region")
 }
 
-// Region returns the region.
+// Region returns the region. It uses the ID from RegionID() to look up the associated region using an enum.
 func (t *Toon) Region() *Region {
 	return regionByID(t.RegionID())
 }
 
-// URL returns the starcraft2.com url
+// URL returns the starcraft2.com profile URL.
 func (t *Toon) URL() string {
 	return fmt.Sprintf("%s/%d/%d/%d", "https://starcraft2.com/en-us/en/profile", t.RegionID(), t.RealmID(), t.ID())
 }

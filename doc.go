@@ -31,9 +31,9 @@ And that's all! We now have all the info from the replay! Printing some of it:
 	fmt.Printf("Loops:          %d\n", r.Header.Loops())
 	fmt.Printf("Length:         %v\n", r.Header.Duration())
 	fmt.Printf("Map:            %s\n", r.Details.Title())
-	fmt.Printf("Game events:    %d\n", len(r.GameEvts))
-	fmt.Printf("Message events: %d\n", len(r.MessageEvts))
-	fmt.Printf("Tracker events: %d\n", len(r.TrackerEvts.Evts))
+	fmt.Printf("Game events:    %d\n", len(r.GameEvents))
+	fmt.Printf("Message events: %d\n", len(r.MessageEvents))
+	fmt.Printf("Tracker events: %d\n", len(r.TrackerEvents.Events))
 
 	fmt.Println("Players:")
 	for _, p := range r.Details.Players() {

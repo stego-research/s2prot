@@ -35,8 +35,14 @@ func (d *versionedDec) instance(typeid int) interface{} {
 		return readVarInt(b)
 	case s2pStruct:
 		b.readBits8() // Field type (5)
-		// TODO order should be preserved! Map does not preserve it!
 		s := Struct{}
+		order := make([]string, 0, 8)
+		add := func(name string, val interface{}) {
+			if _, exists := s[name]; !exists {
+				order = append(order, name)
+			}
+			s[name] = val
+		}
 		length := int(readVarInt(b))
 		for i := 0; i < length; i++ {
 			tag := int(readVarInt(b))
@@ -55,19 +61,33 @@ func (d *versionedDec) instance(typeid int) interface{} {
 			if f.isNameParent {
 				parent := d.instance(f.typeid)
 				if s2, ok := parent.(Struct); ok {
-					// Copy s2 into s
-					for k, v := range s2 {
-						s[k] = v
+					// Copy s2 into s using parent's order if available
+					if po, ok := s2["__order"].([]string); ok {
+						for _, k := range po {
+							if k == "__order" {
+								continue
+							}
+							add(k, s2[k])
+						}
+					} else {
+						for k, v := range s2 {
+							if k == "__order" {
+								continue
+							}
+							add(k, v)
+						}
 					}
 				} else if len(ti.fields) == 1 {
 					return parent
 				} else {
-					s[f.name] = parent
+					add(f.name, parent)
 				}
 			} else {
-				s[f.name] = d.instance(f.typeid)
+				add(f.name, d.instance(f.typeid))
 			}
 		}
+		// store order info for ordered JSON marshalling
+		s["__order"] = order
 		return s
 	case s2pChoice:
 		b.readBits8() // Field type (3)
@@ -76,7 +96,10 @@ func (d *versionedDec) instance(typeid int) interface{} {
 			return nil
 		}
 		f := ti.fields[tag]
-		return Struct{f.name: d.instance(f.typeid)}
+		s := Struct{}
+		s[f.name] = d.instance(f.typeid)
+		s["__order"] = []string{f.name}
+		return s
 	case s2pArr:
 		b.readBits8() // Field type (0)
 		length := readVarInt(b)

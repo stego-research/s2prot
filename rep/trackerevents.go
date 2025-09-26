@@ -13,20 +13,20 @@ import (
 )
 
 const (
-	// TrackerEvtIDPlayerStats is the ID of the Player Stats tracker event
-	TrackerEvtIDPlayerStats = 0
+	// TrackerEventtIDPlayerStats is the ID of the Player Stats tracker event
+	TrackerEventtIDPlayerStats = 0
 
-	// TrackerEvtIDUnitBorn is the ID of the Unit Born tracker event
-	TrackerEvtIDUnitBorn = 1
+	// TrackerEventIDUnitBorn is the ID of the Unit Born tracker event
+	TrackerEventIDUnitBorn = 1
 
-	// TrackerEvtIDPlayerSetup is the ID of the Player Setup tracker event
-	TrackerEvtIDPlayerSetup = 9
+	// TrackerEventIDPlayerSetup is the ID of the Player Setup tracker event
+	TrackerEventIDPlayerSetup = 9
 )
 
-// TrackerEvts contains tracker events and some metrics and data calculated from them.
-type TrackerEvts struct {
-	// Evts contains the tracker events
-	Evts []s2prot.Event
+// TrackerEvents contains tracker events and some metrics and data calculated from them.
+type TrackerEvents struct {
+	// Events contains the tracker events
+	Events []s2prot.Event
 
 	// PIDPlayerDescMap is a PlayerDesc map mapped from player ID.
 	PIDPlayerDescMap map[int64]*PlayerDesc
@@ -61,7 +61,7 @@ type PlayerDesc struct {
 }
 
 // init initializes / preprocesses the tracker events.
-func (t *TrackerEvts) init(rep *Rep) {
+func (t *TrackerEvents) init(rep *Rep) {
 	pidPlayerDescMap := make(map[int64]*PlayerDesc)
 	t.PIDPlayerDescMap = pidPlayerDescMap
 
@@ -76,11 +76,11 @@ func (t *TrackerEvts) init(rep *Rep) {
 	pidStats := make(map[int64]*stats)
 
 	// first read Player setup events:
-	for _, e := range t.Evts {
+	for _, e := range t.Events {
 		if e.Loop() > 0 {
 			break
 		}
-		if e.ID != TrackerEvtIDPlayerSetup {
+		if e.ID != TrackerEventIDPlayerSetup {
 			continue
 		}
 		pid := e.Int("playerId")
@@ -97,8 +97,8 @@ func (t *TrackerEvts) init(rep *Rep) {
 	cx := rep.InitData.GameDescription.MapSizeX() / 2
 	cy := rep.InitData.GameDescription.MapSizeY() / 2
 
-	for _, e := range t.Evts {
-		if e.Loop() == 0 && e.ID == TrackerEvtIDUnitBorn {
+	for _, e := range t.Events {
+		if e.Loop() == 0 && e.ID == TrackerEventIDUnitBorn {
 			if isMainBuilding(e.Stringv("unitTypeName")) {
 				pd := pidPlayerDescMap[e.Int("controlPlayerId")]
 				if pd != nil {
@@ -109,7 +109,7 @@ func (t *TrackerEvts) init(rep *Rep) {
 			}
 		}
 
-		if e.ID == TrackerEvtIDPlayerStats {
+		if e.ID == TrackerEventtIDPlayerStats {
 			pid := e.Int("playerId")
 			st := pidStats[pid]
 			if st != nil {
