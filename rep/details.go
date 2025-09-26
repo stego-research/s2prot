@@ -153,7 +153,7 @@ func (d *Details) Matchup() string {
 type Player struct {
 	s2prot.Struct
 	Name  string  // Name of the player. May contain an optional clan tag.
-	Toon  Toon    // Toon of the player. This is a unique identifier. Toon information inclueds
+	Toon  Toon    // Toon of the player. This is a unique identifier. Toon information includes
 	Color [4]byte // Color of the player, ARGB components. A=255 means opaque, A=0 means transparent.
 	race  *Race   // Lazily initialized race.
 }
