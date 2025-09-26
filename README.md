@@ -1,5 +1,7 @@
 # s2prot
 
+Maintained by Brendan Dibbell (Stegosaurus), Stego Research. Original author: @icza. Modified and distributed under the terms of the original license, Apache 2.0.
+
 ![Build Status](https://github.com/stego-research/s2prot/actions/workflows/go.yml/badge.svg)
 [![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot.svg)](https://pkg.go.dev/github.com/stego-research/s2prot)
 [![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
@@ -16,7 +18,7 @@ There is also an example CLI app that can be used standalone.
 
 Parses all versions that were written with retail versions of StarCraft II (and some beta versions too).
 
-_Check out the sister project to parse StarCraft: Brood War replays: [screp](https://github.com/stego-research/screp)_
+_Check out the sister project to parse StarCraft: Brood War replays: [screp](https://github.com/icza/screp)_
 
 ## Using the `s2prot` CLI app
 
