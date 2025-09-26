@@ -123,8 +123,7 @@ func (d *Details) Players() []Player {
 		for i, pl := range players {
 			p := Player{Struct: pl.(s2prot.Struct)}
 			// Remove inline <sp/> tokens from names (used as spacing markers).
-			rawName := p.Stringv("name")
-			p.Name = strings.ReplaceAll(rawName, "<sp/>", "")
+			p.Name = strings.ReplaceAll(p.Stringv("name"), "<sp/>", "")
 			p.Toon = Toon{Struct: p.Structv("toon")}
 			c := p.Structv("color")
 			p.Color = [4]byte{byte(c.Int("a")), byte(c.Int("r")), byte(c.Int("g")), byte(c.Int("b"))}
