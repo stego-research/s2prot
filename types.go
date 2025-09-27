@@ -337,11 +337,11 @@ func (s Struct) MarshalJSON() ([]byte, error) {
 	return json.Marshal(plain(s))
 }
 
-// Event descriptor
-type Event struct {
+// Event describes a decoded replay event and embeds its Struct and type metadata.
+ type Event struct {
 	Struct
 	*EventType // Pointer only to avoid copying
-}
+ }
 
 // Loop returns the loop (time) of the event.
 func (e *Event) Loop() int64 {
@@ -367,7 +367,7 @@ func (b *BitArr) Bit(n int) bool {
 	return b.Data[n>>3]&singleBitMasks[n&0x07] != 0
 }
 
-// Cached array which tells the nubmer of 1 bits in the number specified by the index.
+// Cached array which tells the number of 1 bits in the number specified by the index.
 var ones [256]int
 
 func init() {
