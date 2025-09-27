@@ -37,17 +37,18 @@ func (d *versionedDec) instance(typeid int) interface{} {
 		b.readBits8() // Field type (5)
 		s := Struct{}
 		order := make([]string, 0, 8)
+		orderMap := make(map[string]int)
 		add := func(name string, val interface{}) {
-			if _, exists := s[name]; exists {
+			if idx, exists := orderMap[name]; exists {
 				// Remove the key from its previous position in order
-				for i, k := range order {
-					if k == name {
-						order = append(order[:i], order[i+1:]...)
-						break
-					}
+				order = append(order[:idx], order[idx+1:]...)
+				// Update indices in orderMap for keys after the removed index
+				for i := idx; i < len(order); i++ {
+					orderMap[order[i]] = i
 				}
 			}
 			order = append(order, name)
+			orderMap[name] = len(order) - 1
 			s[name] = val
 		}
 		length := int(readVarInt(b))
