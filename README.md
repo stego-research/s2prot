@@ -5,7 +5,6 @@ Maintained by Brendan Dibbell (Stegosaurus), Stego Research. Original author: @i
 ![Build Status](https://github.com/stego-research/s2prot/actions/workflows/go.yml/badge.svg)
 [![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot/v2.svg)](https://pkg.go.dev/github.com/stego-research/s2prot/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stego-research/s2prot)](https://goreportcard.com/report/github.com/stego-research/s2prot)
-[![codecov](https://codecov.io/gh/stego-research/s2prot/branch/main/graph/badge.svg)](https://codecov.io/gh/stego-research/s2prot)
 
 Package `s2prot` is a decoder/parser of Blizzard's StarCraft II replay file format (*.SC2Replay).
 
