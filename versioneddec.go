@@ -38,9 +38,16 @@ func (d *versionedDec) instance(typeid int) interface{} {
 		s := Struct{}
 		order := make([]string, 0, 8)
 		add := func(name string, val interface{}) {
-			if _, exists := s[name]; !exists {
-				order = append(order, name)
+			if _, exists := s[name]; exists {
+				// Remove the key from its previous position in order
+				for i, k := range order {
+					if k == name {
+						order = append(order[:i], order[i+1:]...)
+						break
+					}
+				}
 			}
+			order = append(order, name)
 			s[name] = val
 		}
 		length := int(readVarInt(b))
