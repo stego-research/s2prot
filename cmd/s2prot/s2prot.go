@@ -11,8 +11,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/stego-research/s2prot"
-	"github.com/stego-research/s2prot/rep"
+	"github.com/stego-research/s2prot/v2"
+	"github.com/stego-research/s2prot/v2/rep"
 )
 
 const (

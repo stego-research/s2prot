@@ -12,8 +12,8 @@ import (
 	"io"
 
 	"github.com/stego-research/mpq"
-	"github.com/stego-research/s2prot"
-	"github.com/stego-research/s2prot/build"
+	"github.com/stego-research/s2prot/v2"
+	"github.com/stego-research/s2prot/v2/build"
 )
 
 const (

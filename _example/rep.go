@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/stego-research/s2prot/rep"
+	"github.com/stego-research/s2prot/v2/rep"
 )
 
 func main() {

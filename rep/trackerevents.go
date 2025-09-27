@@ -9,7 +9,7 @@ package rep
 import (
 	"math"
 
-	"github.com/stego-research/s2prot"
+	"github.com/stego-research/s2prot/v2"
 )
 
 const (

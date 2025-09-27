@@ -3,7 +3,7 @@ package s2prot
 import (
 	"testing"
 
-	"github.com/stego-research/s2prot/build"
+	"github.com/stego-research/s2prot/v2/build"
 )
 
 func TestGetProtocol(t *testing.T) {

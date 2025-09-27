@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stego-research/s2prot"
+	"github.com/stego-research/s2prot/v2"
 )
 
 // winFileTimeEpochDiff represents the difference between Windows FILETIME epoch (1601-01-01)

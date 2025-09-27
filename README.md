@@ -3,8 +3,7 @@
 Maintained by Brendan Dibbell (Stegosaurus), Stego Research. Original author: @icza. Modified and distributed under the terms of the original license, Apache 2.0.
 
 ![Build Status](https://github.com/stego-research/s2prot/actions/workflows/go.yml/badge.svg)
-[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot.svg)](https://pkg.go.dev/github.com/stego-research/s2prot)
-[![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot/v2.svg)](https://pkg.go.dev/github.com/stego-research/s2prot/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stego-research/s2prot)](https://goreportcard.com/report/github.com/stego-research/s2prot)
 [![codecov](https://codecov.io/gh/stego-research/s2prot/branch/main/graph/badge.svg)](https://codecov.io/gh/stego-research/s2prot)
 
@@ -44,7 +43,7 @@ Or simply:
 
 ## High-level Usage
 
-[![GoDoc](https://godoc.org/github.com/stego-research/s2prot/rep?status.svg)](https://godoc.org/github.com/stego-research/s2prot/rep)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot/v2/rep.svg)](https://pkg.go.dev/github.com/stego-research/s2prot/v2/rep)
 
 The package `s2prot/rep` provides enumerations and types to model data structures
 of StarCraft II replays (*.SC2Replay) decoded by the `s2prot` package. These provide a higher level overview
@@ -54,12 +53,12 @@ The below example code can be found in https://github.com/stego-research/s2prot/
 
 Install the latest version of the library:
 ```
-go get -u github.com/stego-research/s2prot/rep@main
+go get github.com/stego-research/s2prot/v2/rep@latest
 ```
 
 To open and parse a replay:
 
-	import "github.com/stego-research/s2prot/rep"
+	import "github.com/stego-research/s2prot/v2/rep"
 
 	r, err := rep.NewFromFile("../../mpq/reps/lotv.SC2Replay")
 	if err != nil {

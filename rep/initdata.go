@@ -6,7 +6,7 @@ Types describing the init data (the initial lobby).
 
 package rep
 
-import "github.com/stego-research/s2prot"
+import "github.com/stego-research/s2prot/v2"
 
 // InitData describes the init data (the initial lobby).
 type InitData struct {

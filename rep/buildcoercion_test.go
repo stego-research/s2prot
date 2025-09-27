@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stego-research/s2prot/build"
+	"github.com/stego-research/s2prot/v2/build"
 )
 
 func TestFindClosestSupportedBaseBuild(t *testing.T) {
