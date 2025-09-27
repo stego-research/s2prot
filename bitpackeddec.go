@@ -38,25 +38,53 @@ func (d *bitPackedDec) instance(typeid int) interface{} {
 	case s2pInt:
 		return readInt()
 	case s2pStruct:
-		// TODO order should be preserved! Map does not preserve it!
 		s := Struct{}
+		order := make([]string, 0, 8)
+		orderMap := make(map[string]int)
+		add := func(name string, val interface{}) {
+			if idx, exists := orderMap[name]; exists {
+				// Remove the key from its previous position in order
+				order = append(order[:idx], order[idx+1:]...)
+				// Update indices in orderMap for keys after the removed index
+				for i := idx; i < len(order); i++ {
+					orderMap[order[i]] = i
+				}
+			}
+			order = append(order, name)
+			orderMap[name] = len(order) - 1
+			s[name] = val
+		}
 		for _, f := range ti.fields {
 			if f.isNameParent {
 				parent := d.instance(f.typeid)
 				if s2, ok := parent.(Struct); ok {
-					// Copy s2 into s
-					for k, v := range s2 {
-						s[k] = v
+					// Copy s2 into s using parent's order if available
+					if po, ok := s2["__order"].([]string); ok {
+						for _, k := range po {
+							if k == "__order" {
+								continue
+							}
+							add(k, s2[k])
+						}
+					} else {
+						for k, v := range s2 {
+							if k == "__order" {
+								continue
+							}
+							add(k, v)
+						}
 					}
 				} else if len(ti.fields) == 1 {
 					return parent
 				} else {
-					s[f.name] = parent
+					add(f.name, parent)
 				}
 			} else {
-				s[f.name] = d.instance(f.typeid)
+				add(f.name, d.instance(f.typeid))
 			}
 		}
+		// store order info for ordered JSON marshalling
+		s["__order"] = order
 		return s
 	case s2pChoice:
 		tag := int(readInt())
@@ -64,7 +92,10 @@ func (d *bitPackedDec) instance(typeid int) interface{} {
 			return nil
 		}
 		f := ti.fields[tag]
-		return Struct{f.name: d.instance(f.typeid)}
+		s := Struct{}
+		s[f.name] = d.instance(f.typeid)
+		s["__order"] = []string{f.name}
+		return s
 	case s2pArr:
 		length := readInt()
 		arr := make([]interface{}, length)

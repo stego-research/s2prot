@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/stego-research/mpq"
-	"github.com/stego-research/s2prot"
+	"github.com/stego-research/s2prot/v2"
 )
 
 func main() {

@@ -11,14 +11,14 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/stego-research/s2prot"
-	"github.com/stego-research/s2prot/rep"
+	"github.com/stego-research/s2prot/v2"
+	"github.com/stego-research/s2prot/v2/rep"
 )
 
 const (
 	appName    = "s2prot"
 	appVersion = "v1.5.1"
-	appAuthor  = "Andras Belicza"
+	appAuthors = "Andras Belicza, Brendan Dibbell"
 	appHome    = "https://github.com/stego-research/s2prot"
 )
 
@@ -26,15 +26,15 @@ const (
 var (
 	version = flag.Bool("version", false, "print version info and exit")
 
-	header      = flag.Bool("header", true, "print replay header")
-	details     = flag.Bool("details", false, "print replay details")
-	initData    = flag.Bool("initdata", false, "print replay init data")
-	attrEvts    = flag.Bool("attrevts", false, "print attributes events")
-	metadata    = flag.Bool("metadata", true, "print game metadata")
-	gameEvts    = flag.Bool("gameevts", false, "print game events")
-	msgEvts     = flag.Bool("msgevts", false, "print message events")
-	trackerEvts = flag.Bool("trackerevts", false, "print tracker events")
-	outFile     = flag.String("outfile", "", "optional output file name")
+	header           = flag.Bool("header", true, "print replay header")
+	details          = flag.Bool("details", false, "print replay details")
+	initData         = flag.Bool("initdata", false, "print replay init data")
+	attributesEvents = flag.Bool("attributesevents", false, "print attributes events")
+	metadata         = flag.Bool("metadata", true, "print game metadata")
+	gameEvents       = flag.Bool("gameevents", false, "print game events")
+	messageEvents    = flag.Bool("messageevents", false, "print message events")
+	trackerEvents    = flag.Bool("trackerevents", false, "print tracker events")
+	outFile          = flag.String("outfile", "", "optional output file name")
 
 	indent = flag.Bool("indent", true, "use indentation when formatting output")
 )
@@ -53,7 +53,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r, err := rep.NewFromFileEvts(args[0], *gameEvts, *msgEvts, *trackerEvts)
+	r, err := rep.NewFromFileEvents(args[0], *gameEvents, *messageEvents, *trackerEvents)
 	if err != nil {
 		fmt.Printf("Failed to parse replay: %v\n", err)
 		os.Exit(2)
@@ -69,20 +69,20 @@ func main() {
 	if !*initData {
 		r.InitData.Struct = nil
 	}
-	if !*attrEvts {
-		r.AttrEvts.Struct = nil
+	if !*attributesEvents {
+		r.AttributesEvents.Struct = nil
 	}
 	if !*metadata {
 		r.Metadata.Struct = nil
 	}
-	if !*gameEvts {
-		r.GameEvts = nil
+	if !*gameEvents {
+		r.GameEvents = nil
 	}
-	if !*msgEvts {
-		r.MessageEvts = nil
+	if !*messageEvents {
+		r.MessageEvents = nil
 	}
-	if !*trackerEvts {
-		r.TrackerEvts = nil
+	if !*trackerEvents {
+		r.TrackerEvents = nil
 	}
 
 	var enc *json.Encoder
@@ -115,7 +115,7 @@ func printVersion() {
 	fmt.Println("Supported replay builds:", s2prot.MinBaseBuild, "..", s2prot.MaxBaseBuild)
 	fmt.Println("Platform:", runtime.GOOS, runtime.GOARCH)
 	fmt.Println("Built with:", runtime.Version())
-	fmt.Println("Author:", appAuthor)
+	fmt.Println("Authors:", appAuthors)
 	fmt.Println("Home page:", appHome)
 }
 

@@ -7,6 +7,7 @@ Types describing decoding instructions for protocol types.
 package s2prot
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -296,11 +297,51 @@ func (s Struct) String() string {
 	return string(b)
 }
 
-// Event descriptor
-type Event struct {
-	Struct
-	*EvtType // Pointer only to avoid copying
+// MarshalJSON implements json.Marshaler for Struct.
+// If a special "__order" key is present and is a []string, fields
+// will be emitted in that order. The helper key itself is omitted from output.
+func (s Struct) MarshalJSON() ([]byte, error) {
+	if o, ok := s["__order"].([]string); ok {
+		var buf bytes.Buffer
+		buf.WriteByte('{')
+		first := true
+		for _, k := range o {
+			if k == "__order" {
+				continue
+			}
+			v, ok := s[k]
+			if !ok {
+				continue
+			}
+			kb, err := json.Marshal(k)
+			if err != nil {
+				return nil, err
+			}
+			vb, err := json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			if !first {
+				buf.WriteByte(',')
+			}
+			first = false
+			buf.Write(kb)
+			buf.WriteByte(':')
+			buf.Write(vb)
+		}
+		buf.WriteByte('}')
+		return buf.Bytes(), nil
+	}
+	// Fallback to default map marshaling (unordered)
+	type plain map[string]interface{}
+	return json.Marshal(plain(s))
 }
+
+// Event describes a decoded replay event and embeds its Struct and type metadata.
+ type Event struct {
+	Struct
+	*EventType // Pointer only to avoid copying
+ }
 
 // Loop returns the loop (time) of the event.
 func (e *Event) Loop() int64 {
@@ -326,7 +367,7 @@ func (b *BitArr) Bit(n int) bool {
 	return b.Data[n>>3]&singleBitMasks[n&0x07] != 0
 }
 
-// Cached array which tells the nubmer of 1 bits in the number specified by the index.
+// Cached array which tells the number of 1 bits in the number specified by the index.
 var ones [256]int
 
 func init() {

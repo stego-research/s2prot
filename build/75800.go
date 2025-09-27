@@ -1,7 +1,7 @@
 package build
 
 func init() {
-    Builds[75800] = `
+	Builds[75800] = `
 # Copyright (c) 2015-2017 Blizzard Entertainment
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -393,7 +393,7 @@ replay_header_typeid = 18
 # The typeid of NNet.Game.SDetails (the type used to store overall replay details).
 game_details_typeid = 40
 
-# The typeid of NNet.Replay.SInitData (the type used to store the inital lobby).
+# The typeid of NNet.Replay.SInitData (the type used to store the initial lobby).
 replay_initdata_typeid = 73
 
 

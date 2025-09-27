@@ -6,7 +6,7 @@ Types describing the init data (the initial lobby).
 
 package rep
 
-import "github.com/stego-research/s2prot"
+import "github.com/stego-research/s2prot/v2"
 
 // InitData describes the init data (the initial lobby).
 type InitData struct {
@@ -17,7 +17,7 @@ type InitData struct {
 	UserInitDatas   []UserInitData  `json:"-"` // Array User init data structs
 }
 
-// NewInitData creates a new init data from the specified Struct.
+// NewInitData creates a new init data (game start/lobby data, meta-inf) from the specified Struct.
 func NewInitData(s s2prot.Struct) InitData {
 	// Init data is a struct with 1 field only which is a struct. Use that as the root struct.
 	i := InitData{Struct: s.Structv("syncLobbyState")}

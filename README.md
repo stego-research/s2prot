@@ -3,10 +3,9 @@
 Maintained by Brendan Dibbell (Stegosaurus), Stego Research. Original author: @icza. Modified and distributed under the terms of the original license, Apache 2.0.
 
 ![Build Status](https://github.com/stego-research/s2prot/actions/workflows/go.yml/badge.svg)
-[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot.svg)](https://pkg.go.dev/github.com/stego-research/s2prot)
-[![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot/v2.svg)](https://pkg.go.dev/github.com/stego-research/s2prot/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stego-research/s2prot)](https://goreportcard.com/report/github.com/stego-research/s2prot)
-[![codecov](https://codecov.io/gh/icza/s2prot/branch/master/graph/badge.svg)](https://codecov.io/gh/icza/s2prot)
+[![codecov](https://codecov.io/gh/stego-research/s2prot/branch/main/graph/badge.svg)](https://codecov.io/gh/stego-research/s2prot)
 
 Package `s2prot` is a decoder/parser of Blizzard's StarCraft II replay file format (*.SC2Replay).
 
@@ -22,8 +21,11 @@ _Check out the sister project to parse StarCraft: Brood War replays: [screp](htt
 
 ## Using the `s2prot` CLI app
 
-There is a command line application in the [cmd/s2prot](https://github.com/stego-research/s2prot/tree/master/cmd/s2prot) folder
+There is a command line application in the [cmd/s2prot](https://github.com/stego-research/s2prot/tree/main/cmd/s2prot) folder
 which can be used to parse and display information about a single replay file.
+
+There is also a benchmarking utility in [cmd/repbench](https://github.com/stego-research/s2prot/tree/main/cmd/repbench)
+that measures parsing performance across many .SC2Replay files. See below.
 
 The extracted data is displayed using JSON representation.
 
@@ -44,22 +46,22 @@ Or simply:
 
 ## High-level Usage
 
-[![GoDoc](https://godoc.org/github.com/stego-research/s2prot/rep?status.svg)](https://godoc.org/github.com/stego-research/s2prot/rep)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stego-research/s2prot/v2/rep.svg)](https://pkg.go.dev/github.com/stego-research/s2prot/v2/rep)
 
 The package `s2prot/rep` provides enumerations and types to model data structures
 of StarCraft II replays (*.SC2Replay) decoded by the `s2prot` package. These provide a higher level overview
 and much easier to use.
 
-The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/rep.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/main/_example/rep.go.
 
 Install the latest version of the library:
 ```
-go get -u github.com/stego-research/s2prot/rep@master
+go get github.com/stego-research/s2prot/v2/rep@latest
 ```
 
 To open and parse a replay:
 
-	import "github.com/stego-research/s2prot/rep"
+	import "github.com/stego-research/s2prot/v2/rep"
 
 	r, err := rep.NewFromFile("../../mpq/reps/lotv.SC2Replay")
 	if err != nil {
@@ -133,7 +135,7 @@ Output:
 
 [![GoDoc](https://godoc.org/github.com/stego-research/s2prot?status.svg)](https://godoc.org/github.com/stego-research/s2prot)
 
-The below example code can be found in https://github.com/stego-research/s2prot/blob/master/_example/s2prot.go.
+The below example code can be found in https://github.com/stego-research/s2prot/blob/main/_example/s2prot.go.
 
 To use `s2prot`, we need an MPQ parser to get content from a replay.
 
@@ -182,14 +184,40 @@ Tip: We can of course print the whole decoded `header` which is a `Struct`:
 
 Which yields a JSON text similar to the one posted above (at High-level Usage).
 
+## Benchmarking utility (repbench)
+
+The repository ships with a benchmarking utility under `cmd/repbench` that measures performance across a set of `.SC2Replay` files.
+
+- Inputs: files, directories, or globs; directories are scanned recursively by default.
+- Metrics per file: load time (open + header), decode time (full parse), read time (common field access), memory deltas, and approximate bytes read.
+- Aggregates: mean/median, 1% low/high, standard deviation, and outlier file lists.
+- Output: JSON report to stdout or `-out` path.
+
+Example usage:
+
+    repbench ~/replays/*.SC2Replay
+    repbench -workers 4 -out bench.json /data/replays
+
+Flags:
+
+- `-workers` number of concurrent workers (default 1)
+- `-recurse` recurse into directories (default true)
+- `-limit` limit number of files processed (default 0, no limit)
+- `-game` include game events (default true)
+- `-message` include message events (default true)
+- `-tracker` include tracker events (default true)
+- `-out` write JSON report to file instead of stdout
+- `-html` write an HTML report to file (in addition to JSON)
+- `-progress` print progress to stderr while processing files
+
 ## Information sources
 
 - s2protocol: Blizzard's reference implementation in python: https://github.com/Blizzard/s2protocol
 
-- s2protocol implementation of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/s2prot
+- s2protocol implementation of the Scelight project: https://github.com/stego-research/scelight/tree/main/src-app/hu/scelight/sc2/rep/s2prot
 
-- Replay model of the Scelight project: https://github.com/stego-research/scelight/tree/master/src-app/hu/scelight/sc2/rep/model
+- Replay model of the Scelight project: https://github.com/stego-research/scelight/tree/main/src-app/hu/scelight/sc2/rep/model
 
 ## License
 
-Open-sourced under the [Apache License 2.0](https://github.com/stego-research/s2prot/blob/master/LICENSE).
+Open-sourced under the [Apache License 2.0](https://github.com/stego-research/s2prot/blob/main/LICENSE).

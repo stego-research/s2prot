@@ -12,7 +12,7 @@ type versionedDec struct {
 	typeInfos      []typeInfo // Type descriptors
 }
 
-// newBitPackedDec creates a new bit-packed decoder.
+// newVersionedDec creates a new versioned decoder.
 func newVersionedDec(contents []byte, typeInfos []typeInfo) *versionedDec {
 	return &versionedDec{
 		bitPackedBuff: &bitPackedBuff{
@@ -35,48 +35,79 @@ func (d *versionedDec) instance(typeid int) interface{} {
 		return readVarInt(b)
 	case s2pStruct:
 		b.readBits8() // Field type (5)
-		// TODO order should be preserved! Map does not preserve it!
 		s := Struct{}
-		length := int(readVarInt(b))
-		for i := 0; i < length; i++ {
-			tag := int(readVarInt(b))
-			var f *field
-			for idx := range ti.fields {
-				if ti.fields[idx].tag == tag {
-					f = &ti.fields[idx]
-					break
+		order := make([]string, 0, 8)
+		orderMap := make(map[string]int)
+		add := func(name string, val interface{}) {
+			if idx, exists := orderMap[name]; exists {
+				// Remove the key from its previous position in order
+				order = append(order[:idx], order[idx+1:]...)
+				// Update indices in orderMap for keys after the removed index
+				for i := idx; i < len(order); i++ {
+					orderMap[order[i]] = i
 				}
 			}
-			if f == nil {
-				// We don't have info about the field, skip it
+			order = append(order, name)
+			orderMap[name] = len(order) - 1
+			s[name] = val
+		}
+		length := int(readVarInt(b))
+		// Build tag->index map once to avoid O(n) scans per field
+		tagIndex := make(map[int]int, len(ti.fields))
+		for i := range ti.fields {
+			tagIndex[ti.fields[i].tag] = i
+		}
+		for i := 0; i < length; i++ {
+			tag := int(readVarInt(b))
+			idx, ok := tagIndex[tag]
+			if !ok {
+				// Unknown field; skip it
 				skipInstance(b)
 				continue
 			}
+			f := &ti.fields[idx]
 			if f.isNameParent {
 				parent := d.instance(f.typeid)
 				if s2, ok := parent.(Struct); ok {
-					// Copy s2 into s
-					for k, v := range s2 {
-						s[k] = v
+					// Copy s2 into s using parent's order if available
+					if po, ok := s2["__order"].([]string); ok {
+						for _, k := range po {
+							if k == "__order" {
+								continue
+							}
+							add(k, s2[k])
+						}
+					} else {
+						for k, v := range s2 {
+							if k == "__order" {
+								continue
+							}
+							add(k, v)
+						}
 					}
 				} else if len(ti.fields) == 1 {
 					return parent
 				} else {
-					s[f.name] = parent
+					add(f.name, parent)
 				}
 			} else {
-				s[f.name] = d.instance(f.typeid)
+				add(f.name, d.instance(f.typeid))
 			}
 		}
+		// store order info for ordered JSON marshalling
+		s["__order"] = order
 		return s
 	case s2pChoice:
 		b.readBits8() // Field type (3)
 		tag := int(readVarInt(b))
-		if tag > len(ti.fields) {
+		if tag >= len(ti.fields) {
 			return nil
 		}
 		f := ti.fields[tag]
-		return Struct{f.name: d.instance(f.typeid)}
+		s := Struct{}
+		s[f.name] = d.instance(f.typeid)
+		s["__order"] = []string{f.name}
+		return s
 	case s2pArr:
 		b.readBits8() // Field type (0)
 		length := readVarInt(b)
