@@ -113,7 +113,7 @@ func (v *Version) Revision() int64 {
 	return v.Int("revision")
 }
 
-// Build returns the build part of the version.
+// Build returns the build number part of the version.
 func (v *Version) Build() int64 {
 	return v.Int("build")
 }

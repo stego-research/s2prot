@@ -438,11 +438,109 @@ func (p *Protocol) decodeEvents(d decoder, evtidTypeid int, etypes []EventType, 
 		userid interface{}
 	)
 
+	// Cache delta type info for fast-path decoding
+	var deltaTI *typeInfo
+	if deltaTypeid >= 0 && deltaTypeid < len(p.typeInfos) {
+		deltaTI = &p.typeInfos[deltaTypeid]
+	}
+
 	for !d.EOF() {
-		delta := d.instance(deltaTypeid).(Struct)
-		// delta has one key-value pair:
-		for _, v := range delta {
-			loop += v.(int64)
+		// Fast-path decode of SVarUint32 (gameloop delta) without allocating a Struct
+		if bp, ok := d.(*bitPackedDec); ok && deltaTI != nil {
+			// Two common shapes across builds:
+			//  - choice: tag selects which int field follows
+			//  - struct: sum of constituent ints
+			switch deltaTI.s2pType {
+			case s2pChoice:
+				// tag = offset + readBits(bits)
+				tag := int(deltaTI.offset64 + bp.readBits(byte(deltaTI.bits)))
+				if tag < len(deltaTI.fields) && tag >= 0 {
+					f := deltaTI.fields[tag]
+					if v, ok := bp.instance(f.typeid).(int64); ok {
+						loop += v
+					} else if s, ok := bp.instance(f.typeid).(Struct); ok {
+						for _, iv := range s {
+							if n, ok := iv.(int64); ok {
+								loop += n
+							}
+						}
+					}
+				} else {
+					// Unknown tag, fallback: no delta
+				}
+			case s2pStruct:
+				var sum int64
+				for _, f := range deltaTI.fields {
+					if v, ok := bp.instance(f.typeid).(int64); ok {
+						sum += v
+					}
+				}
+				loop += sum
+			default:
+				// Fallback to generic path
+				delta := d.instance(deltaTypeid).(Struct)
+				for _, v := range delta {
+					if n, ok := v.(int64); ok {
+						loop += n
+					}
+				}
+			}
+		} else if vd, ok := d.(*versionedDec); ok && deltaTI != nil {
+			// Versioned decoder fast path mirrors versionedDec.instance for choice/struct
+			switch deltaTI.s2pType {
+			case s2pChoice:
+				_ = vd.readBits8() // Field type (3)
+				tag := int(readVarInt(vd.bitPackedBuff))
+				if tag < len(deltaTI.fields) && tag >= 0 {
+					f := deltaTI.fields[tag]
+					if v, ok := vd.instance(f.typeid).(int64); ok {
+						loop += v
+					} else if s, ok := vd.instance(f.typeid).(Struct); ok {
+						for _, iv := range s {
+							if n, ok := iv.(int64); ok {
+								loop += n
+							}
+						}
+					}
+				}
+			case s2pStruct:
+				_ = vd.readBits8() // Field type (5)
+				// number of fields
+				for n := int(readVarInt(vd.bitPackedBuff)); n > 0; n-- {
+					tag := int(readVarInt(vd.bitPackedBuff))
+					var fsel *field
+					for i := range deltaTI.fields {
+						if deltaTI.fields[i].tag == tag {
+							fsel = &deltaTI.fields[i]
+							break
+						}
+					}
+					if fsel == nil {
+						// Unknown field; skip reading one instance generically
+						_ = vd.instance(tag) // best-effort
+						continue
+					}
+					if v, ok := vd.instance(fsel.typeid).(int64); ok {
+						loop += v
+					}
+				}
+			default:
+				// Fallback generic
+				delta := d.instance(deltaTypeid).(Struct)
+				for _, v := range delta {
+					if n, ok := v.(int64); ok {
+						loop += n
+					}
+				}
+			}
+		} else {
+			// Generic, allocation-heavy path (backwards compatible)
+			delta := d.instance(deltaTypeid).(Struct)
+			for _, v := range delta {
+				if n, ok := v.(int64); ok {
+					loop += n
+				}
+			}
 		}
 
 		if decUserID {

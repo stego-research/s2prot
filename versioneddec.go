@@ -12,7 +12,7 @@ type versionedDec struct {
 	typeInfos      []typeInfo // Type descriptors
 }
 
-// newBitPackedDec creates a new bit-packed decoder.
+// newVersionedDec creates a new versioned decoder.
 func newVersionedDec(contents []byte, typeInfos []typeInfo) *versionedDec {
 	return &versionedDec{
 		bitPackedBuff: &bitPackedBuff{
@@ -52,20 +52,20 @@ func (d *versionedDec) instance(typeid int) interface{} {
 			s[name] = val
 		}
 		length := int(readVarInt(b))
+		// Build tag->index map once to avoid O(n) scans per field
+		tagIndex := make(map[int]int, len(ti.fields))
+		for i := range ti.fields {
+			tagIndex[ti.fields[i].tag] = i
+		}
 		for i := 0; i < length; i++ {
 			tag := int(readVarInt(b))
-			var f *field
-			for idx := range ti.fields {
-				if ti.fields[idx].tag == tag {
-					f = &ti.fields[idx]
-					break
-				}
-			}
-			if f == nil {
-				// We don't have info about the field, skip it
+			idx, ok := tagIndex[tag]
+			if !ok {
+				// Unknown field; skip it
 				skipInstance(b)
 				continue
 			}
+			f := &ti.fields[idx]
 			if f.isNameParent {
 				parent := d.instance(f.typeid)
 				if s2, ok := parent.(Struct); ok {
@@ -100,7 +100,7 @@ func (d *versionedDec) instance(typeid int) interface{} {
 	case s2pChoice:
 		b.readBits8() // Field type (3)
 		tag := int(readVarInt(b))
-		if tag > len(ti.fields) {
+		if tag < 0 || tag >= len(ti.fields) {
 			return nil
 		}
 		f := ti.fields[tag]

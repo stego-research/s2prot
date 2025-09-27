@@ -24,6 +24,9 @@ _Check out the sister project to parse StarCraft: Brood War replays: [screp](htt
 There is a command line application in the [cmd/s2prot](https://github.com/stego-research/s2prot/tree/main/cmd/s2prot) folder
 which can be used to parse and display information about a single replay file.
 
+There is also a benchmarking utility in [cmd/repbench](https://github.com/stego-research/s2prot/tree/main/cmd/repbench)
+that measures parsing performance across many .SC2Replay files. See below.
+
 The extracted data is displayed using JSON representation.
 
 Usage is as simple as:
@@ -180,6 +183,32 @@ Tip: We can of course print the whole decoded `header` which is a `Struct`:
 	fmt.Printf("Full Header:\n%v\n", header)
 
 Which yields a JSON text similar to the one posted above (at High-level Usage).
+
+## Benchmarking utility (repbench)
+
+The repository ships with a benchmarking utility under `cmd/repbench` that measures performance across a set of `.SC2Replay` files.
+
+- Inputs: files, directories, or globs; directories are scanned recursively by default.
+- Metrics per file: load time (open + header), decode time (full parse), read time (common field access), memory deltas, and approximate bytes read.
+- Aggregates: mean/median, 1% low/high, standard deviation, and outlier file lists.
+- Output: JSON report to stdout or `-out` path.
+
+Example usage:
+
+    repbench ~/replays/*.SC2Replay
+    repbench -workers 4 -out bench.json /data/replays
+
+Flags:
+
+- `-workers` number of concurrent workers (default 1)
+- `-recurse` recurse into directories (default true)
+- `-limit` limit number of files processed (default 0, no limit)
+- `-game` include game events (default true)
+- `-message` include message events (default true)
+- `-tracker` include tracker events (default true)
+- `-out` write JSON report to file instead of stdout
+- `-html` write an HTML report to file (in addition to JSON)
+- `-progress` print progress to stderr while processing files
 
 ## Information sources
 
