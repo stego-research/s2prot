@@ -100,7 +100,7 @@ func (d *versionedDec) instance(typeid int) interface{} {
 	case s2pChoice:
 		b.readBits8() // Field type (3)
 		tag := int(readVarInt(b))
-		if tag < 0 || tag >= len(ti.fields) {
+		if tag >= len(ti.fields) {
 			return nil
 		}
 		f := ti.fields[tag]
