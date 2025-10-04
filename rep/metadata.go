@@ -44,7 +44,7 @@ func (m *Metadata) DurationSec() float64 {
 // FasterDurationSec returns the game duration in scaled seconds, i.e. DurationSec / 1.4. For more details on how this works
 // see the documentation for Header.FasterDuration().
 func (m *Metadata) FasterDurationSec() float64 {
-	return m.Float("FasterDuration")
+	return m.DurationSec() / 1.4
 }
 
 // Players returns the list of meta players.
