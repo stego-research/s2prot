@@ -9,6 +9,7 @@ package rep
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/stego-research/mpq"
@@ -152,7 +153,7 @@ func newRep(m *mpq.MPQ, game, message, tracker bool) (parsedRep *Rep, errRes err
 	bb := rep.Header.BaseBuild()
 	p := s2prot.GetProtocol(int(bb))
 	if p == nil {
-		return nil, ErrUnsupportedRepVersion
+		return nil, fmt.Errorf("%w, metadata: {\"build\": %d}", ErrUnsupportedRepVersion, bb)
 	}
 	rep.protocol = p
 
@@ -334,12 +335,12 @@ func newRepWithBuildCoercion(m *mpq.MPQ, game, message, tracker bool) (parsedRep
 		// find closest supported build
 		closest, ok := findClosestSupportedBaseBuild(bb)
 		if !ok {
-			return nil, 0, ErrUnsupportedRepVersion
+			return nil, 0, fmt.Errorf("%w, metadata: {\"build\": %d}", ErrUnsupportedRepVersion, bb)
 		}
 		p = s2prot.GetProtocol(closest)
 		if p == nil {
 			// Should not happen but guard anyway
-			return nil, 0, ErrUnsupportedRepVersion
+			return nil, 0, fmt.Errorf("%w, metadata: {\"build\": %d, \"closest\": %d}", ErrUnsupportedRepVersion, bb, closest)
 		}
 		coercedTo = closest
 	}
