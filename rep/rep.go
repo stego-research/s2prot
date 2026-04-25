@@ -78,7 +78,7 @@ type Rep struct {
 	MessageEventsErr bool // Tells if decoding message events had errors
 	TrackerEventsErr bool // Tells if decoding tracker events had errors
 
-	CoercedTo int // The base build used for parsing if the exact protocol was not available.
+	CoercedTo int // The fallback base build used for parsing, or 0 when the exact protocol was available.
 }
 
 // NewFromFile returns a new Rep constructed from a file.
@@ -87,9 +87,12 @@ type Rep struct {
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
-// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the file
-// exists and is a valid SC2Replay file but its version is not supported.
-// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
+// If the file exists and is a valid SC2Replay file but its exact replay protocol is not
+// supported, parsing falls back to the closest supported base build when one is available.
+// Check Rep.CoercedTo on the returned Rep to detect fallback parsing (0 means no coercion).
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) only if no
+// supported protocol is available for the replay version. Use errors.Is(err,
+// ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the replay file is invalid, but also might be due to an implementation bug.
 func NewFromFile(name string) (*Rep, error) {
@@ -103,9 +106,12 @@ func NewFromFile(name string) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
-// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the file
-// exists and is a valid SC2Replay file but its version is not supported.
-// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
+// If the file exists and is a valid SC2Replay file but its exact replay protocol is not
+// supported, parsing falls back to the closest supported base build when one is available.
+// Check Rep.CoercedTo on the returned Rep to detect fallback parsing (0 means no coercion).
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) only if no
+// supported protocol is available for the replay version. Use errors.Is(err,
+// ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the replay file is invalid, but also might be due to an implementation bug.
 func NewFromFileEvents(name string, game, message, tracker bool) (*Rep, error) {
@@ -122,9 +128,12 @@ func NewFromFileEvents(name string, game, message, tracker bool) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
-// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the input
-// is a valid SC2Replay file but its version is not supported.
-// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
+// If the input is a valid SC2Replay file but its exact replay protocol is not supported,
+// parsing falls back to the closest supported base build when one is available. Check
+// Rep.CoercedTo on the returned Rep to detect fallback parsing (0 means no coercion).
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) only if no
+// supported protocol is available for the replay version. Use errors.Is(err,
+// ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func New(input io.ReadSeeker) (*Rep, error) {
@@ -138,9 +147,12 @@ func New(input io.ReadSeeker) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
-// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the input
-// is a valid SC2Replay file but its version is not supported.
-// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
+// If the input is a valid SC2Replay file but its exact replay protocol is not supported,
+// parsing falls back to the closest supported base build when one is available. Check
+// Rep.CoercedTo on the returned Rep to detect fallback parsing (0 means no coercion).
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) only if no
+// supported protocol is available for the replay version. Use errors.Is(err,
+// ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func NewEvents(input io.ReadSeeker, game, message, tracker bool) (*Rep, error) {
@@ -305,7 +317,8 @@ func findClosestSupportedBaseBuild(baseBuild int) (int, bool) {
 // NewEventsWithBuildCoercion returns a new Rep using the specified io.ReadSeeker as the SC2Replay file source,
 // only the specified types of events decoded, but will coerce to the closest supported build protocol if
 // the exact protocol for the replay's base build is not available.
-// The returned int is the coerced base build used for parsing; it is 0 if no coercion was needed.
+// The returned int is the coerced base build used for parsing; it is 0 if no coercion was needed,
+// and matches Rep.CoercedTo on the returned Rep.
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
@@ -325,7 +338,8 @@ func NewEventsWithBuildCoercion(input io.ReadSeeker, game, message, tracker bool
 
 // NewFromFileEventsWithBuildCoercion returns a new Rep constructed from a file, only the specified types of events decoded,
 // but will coerce to the closest supported build protocol if the exact protocol for the replay's base build is not available.
-// The returned int is the coerced base build used for parsing; it is 0 if no coercion was needed.
+// The returned int is the coerced base build used for parsing; it is 0 if no coercion was needed,
+// and matches Rep.CoercedTo on the returned Rep.
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
@@ -355,114 +369,11 @@ func NewFromFileEventsWithBuildCoercion(name string, game, message, tracker bool
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func newRepWithBuildCoercion(m *mpq.MPQ, game, message, tracker bool) (parsedRep *Rep, coercedTo int, errRes error) {
-	closeMPQ := true
-	defer func() {
-		// If returning due to an error, MPQ must be closed!
-		if closeMPQ {
-			m.Close()
-		}
-
-		// The input is completely untrusted and the decoding implementation omits error checks for efficiency:
-		// Protect replay decoding:
-		if r := recover(); r != nil {
-			errRes = ErrDecoding
-		}
-	}()
-
-	rep := Rep{m: m}
-
-	rep.Header = Header{Struct: s2prot.DecodeHeader(m.UserData())}
-	if rep.Header.Struct == nil {
-		return nil, 0, ErrInvalidRepFile
-	}
-
-	bb := int(rep.Header.BaseBuild())
-	p := s2prot.GetProtocol(bb)
-	if p == nil {
-		// find closest supported build
-		closest, ok := findClosestSupportedBaseBuild(bb)
-		if !ok {
-			return nil, 0, &UnsupportedRepVersionError{Build: bb}
-		}
-		p = s2prot.GetProtocol(closest)
-		if p == nil {
-			// Should not happen but guard anyway
-			return nil, 0, &UnsupportedRepVersionError{Build: bb, Closest: closest}
-		}
-		coercedTo = closest
-	}
-	rep.protocol = p
-
-	data, err := m.FileByHash(620083690, 3548627612, 4013960850) // "replay.details"
-	if err != nil || len(data) == 0 {
-		// Attempt to open the anonymized version
-		data, err = m.FileByHash(1421087648, 3590964654, 3400061273) // "replay.details.backup"
-		if err != nil || len(data) == 0 {
-			return nil, 0, ErrInvalidRepFile
-		}
-	}
-	rep.Details = Details{Struct: p.DecodeDetails(data)}
-
-	data, err = m.FileByHash(3544165653, 1518242780, 4280631132) // "replay.initData"
-	if err != nil || len(data) == 0 {
-		// Attempt to open the anonymized version
-		data, err = m.FileByHash(868899905, 1282002788, 1614930827) // "replay.initData.backup"
-		if err != nil || len(data) == 0 {
-			return nil, 0, ErrInvalidRepFile
-		}
-	}
-	rep.InitData = NewInitData(p.DecodeInitData(data))
-
-	data, err = m.FileByHash(1306016990, 497594575, 2731474728) // "replay.attributes.events"
+	rep, err := newRep(m, game, message, tracker)
 	if err != nil {
-		return nil, 0, ErrInvalidRepFile
+		return nil, 0, err
 	}
-	rep.AttributesEvents = NewAttributesEvents(p.DecodeAttributesEvents(data))
-
-	data, err = m.FileByHash(3675439372, 3912155403, 1108615308) // "replay.gamemetadata.json"
-	if err != nil {
-		return nil, 0, ErrInvalidRepFile
-	}
-	if data != nil { // Might not be present, was added around 3.7
-		if err = json.Unmarshal(data, &rep.Metadata.Struct); err != nil {
-			return nil, 0, ErrInvalidRepFile
-		}
-	}
-
-	if game {
-		data, err = m.FileByHash(496563520, 2864883019, 4101385109) // "replay.game.events"
-		if err != nil {
-			return nil, 0, ErrInvalidRepFile
-		}
-		rep.GameEvents, err = p.DecodeGameEvents(data)
-		rep.GameEventsErr = err != nil
-	}
-
-	if message {
-		data, err = m.FileByHash(1089231967, 831857289, 1784674979) // "replay.message.events"
-		if err != nil {
-			return nil, 0, ErrInvalidRepFile
-		}
-		rep.MessageEvents, err = p.DecodeMessageEvents(data)
-		rep.MessageEventsErr = err != nil
-	}
-
-	if tracker {
-		data, err = m.FileByHash(1501940595, 4263103390, 1648390237) // "replay.tracker.events"
-		if err != nil {
-			return nil, 0, ErrInvalidRepFile
-		}
-		evts, err := p.DecodeTrackerEvents(data)
-		rep.TrackerEvents = &TrackerEvents{Events: evts}
-		rep.TrackerEvents.init(&rep)
-		rep.TrackerEventsErr = err != nil
-	}
-
-	// Everything went well, Rep is about to be returned, do not close MPQ
-	// (it will be the caller's responsibility, done via Rep.Close()).
-	closeMPQ = false
-
-	return &rep, coercedTo, nil
+	return rep, rep.CoercedTo, nil
 }
 
 // Close closes the Rep and its resources.
