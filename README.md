@@ -69,6 +69,10 @@ To open and parse a replay:
 	}
 	defer r.Close()
 
+	if r.CoercedTo != 0 {
+		fmt.Printf("Parsed with fallback protocol for base build %d\n", r.CoercedTo)
+	}
+
 And that's all! We now have all the info from the replay! Printing some of it:
 
 	fmt.Printf("Version:        %v\n", r.Header.VersionString())

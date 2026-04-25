@@ -19,6 +19,10 @@ func main() {
 	}
 	defer r.Close()
 
+	if r.CoercedTo != 0 {
+		fmt.Printf("Parsed with fallback protocol for base build %d\n", r.CoercedTo)
+	}
+
 	fmt.Printf("Version:        %v\n", r.Header.VersionString())
 	fmt.Printf("Loops:          %d\n", r.Header.Loops())
 	fmt.Printf("Length:         %v\n", r.Header.Duration())
