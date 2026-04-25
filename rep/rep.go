@@ -77,6 +77,8 @@ type Rep struct {
 	GameEventsErr    bool // Tells if decoding game events had errors
 	MessageEventsErr bool // Tells if decoding message events had errors
 	TrackerEventsErr bool // Tells if decoding tracker events had errors
+
+	CoercedTo int // The base build used for parsing if the exact protocol was not available.
 }
 
 // NewFromFile returns a new Rep constructed from a file.
@@ -181,10 +183,20 @@ func newRep(m *mpq.MPQ, game, message, tracker bool) (parsedRep *Rep, errRes err
 		return nil, ErrInvalidRepFile
 	}
 
-	bb := rep.Header.BaseBuild()
-	p := s2prot.GetProtocol(int(bb))
+	bb := int(rep.Header.BaseBuild())
+	p := s2prot.GetProtocol(bb)
 	if p == nil {
-		return nil, &UnsupportedRepVersionError{Build: int(bb)}
+		// find closest supported build
+		closest, ok := findClosestSupportedBaseBuild(bb)
+		if !ok {
+			return nil, &UnsupportedRepVersionError{Build: bb}
+		}
+		p = s2prot.GetProtocol(closest)
+		if p == nil {
+			// Should not happen but guard anyway
+			return nil, &UnsupportedRepVersionError{Build: bb, Closest: closest}
+		}
+		rep.CoercedTo = closest
 	}
 	rep.protocol = p
 
