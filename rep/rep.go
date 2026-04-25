@@ -27,12 +27,35 @@ var (
 	ErrInvalidRepFile = errors.New("Invalid SC2Replay file")
 
 	// ErrUnsupportedRepVersion means the replay file is valid but its version is not supported.
+	// Errors wrapping ErrUnsupportedRepVersion (e.g. UnsupportedRepVersionError) are returned by
+	// the parser functions; use errors.Is to check for this sentinel value.
 	ErrUnsupportedRepVersion = errors.New("Unsupported replay version")
 
 	// ErrDecoding means decoding the replay file failed,
 	// Most likely because replay file is invalid, but also might be due to an implementation bug
 	ErrDecoding = errors.New("Decoding error")
 )
+
+// UnsupportedRepVersionError is returned when a replay file's version is not supported.
+// It wraps ErrUnsupportedRepVersion and carries the replay's base build number.
+// When build coercion was attempted, Closest holds the nearest supported base build
+// (otherwise Closest is 0). Use errors.Is(err, ErrUnsupportedRepVersion) to test for
+// this condition without coupling to the concrete type.
+type UnsupportedRepVersionError struct {
+	Build   int // The base build of the unsupported replay
+	Closest int // The closest supported base build (0 if coercion was not attempted)
+}
+
+func (e *UnsupportedRepVersionError) Error() string {
+	if e.Closest != 0 {
+		return fmt.Sprintf("%s, metadata: {\"build\": %d, \"closest\": %d}", ErrUnsupportedRepVersion.Error(), e.Build, e.Closest)
+	}
+	return fmt.Sprintf("%s, metadata: {\"build\": %d}", ErrUnsupportedRepVersion.Error(), e.Build)
+}
+
+func (e *UnsupportedRepVersionError) Unwrap() error {
+	return ErrUnsupportedRepVersion
+}
 
 // Rep describes a replay.
 type Rep struct {
@@ -62,7 +85,9 @@ type Rep struct {
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
-// ErrUnsupportedRepVersion is returned if the file exists and is a valid SC2Replay file but its version is not supported.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the file
+// exists and is a valid SC2Replay file but its version is not supported.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the replay file is invalid, but also might be due to an implementation bug.
 func NewFromFile(name string) (*Rep, error) {
@@ -76,7 +101,9 @@ func NewFromFile(name string) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
-// ErrUnsupportedRepVersion is returned if the file exists and is a valid SC2Replay file but its version is not supported.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the file
+// exists and is a valid SC2Replay file but its version is not supported.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the replay file is invalid, but also might be due to an implementation bug.
 func NewFromFileEvents(name string, game, message, tracker bool) (*Rep, error) {
@@ -93,7 +120,9 @@ func NewFromFileEvents(name string, game, message, tracker bool) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
-// ErrUnsupportedRepVersion is returned if the input is a valid SC2Replay file but its version is not supported.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the input
+// is a valid SC2Replay file but its version is not supported.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func New(input io.ReadSeeker) (*Rep, error) {
@@ -107,7 +136,9 @@ func New(input io.ReadSeeker) (*Rep, error) {
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
-// ErrUnsupportedRepVersion is returned if the input is a valid SC2Replay file but its version is not supported.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the input
+// is a valid SC2Replay file but its version is not supported.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func NewEvents(input io.ReadSeeker, game, message, tracker bool) (*Rep, error) {
@@ -153,7 +184,7 @@ func newRep(m *mpq.MPQ, game, message, tracker bool) (parsedRep *Rep, errRes err
 	bb := rep.Header.BaseBuild()
 	p := s2prot.GetProtocol(int(bb))
 	if p == nil {
-		return nil, fmt.Errorf("%w, metadata: {\"build\": %d}", ErrUnsupportedRepVersion, bb)
+		return nil, &UnsupportedRepVersionError{Build: int(bb)}
 	}
 	rep.protocol = p
 
@@ -266,7 +297,9 @@ func findClosestSupportedBaseBuild(baseBuild int) (int, bool) {
 //
 // ErrInvalidRepFile is returned if the input is not a valid SC2Replay file content.
 //
-// ErrUnsupportedRepVersion is returned if the input is a valid SC2Replay file but no supported protocol exists to coerce to.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the input
+// is a valid SC2Replay file but no supported protocol exists to coerce to.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the input is invalid, but also might be due to an implementation bug.
 func NewEventsWithBuildCoercion(input io.ReadSeeker, game, message, tracker bool) (*Rep, int, error) {
@@ -284,7 +317,9 @@ func NewEventsWithBuildCoercion(input io.ReadSeeker, game, message, tracker bool
 //
 // ErrInvalidRepFile is returned if the specified name does not denote a valid SC2Replay file.
 //
-// ErrUnsupportedRepVersion is returned if the file exists and is a valid SC2Replay file but no supported protocol exists to coerce to.
+// ErrUnsupportedRepVersion is returned (wrapped in UnsupportedRepVersionError) if the file
+// exists and is a valid SC2Replay file but no supported protocol exists to coerce to.
+// Use errors.Is(err, ErrUnsupportedRepVersion) to test for this condition.
 //
 // ErrDecoding is returned if decoding the replay fails. This is most likely because the replay file is invalid, but also might be due to an implementation bug.
 func NewFromFileEventsWithBuildCoercion(name string, game, message, tracker bool) (*Rep, int, error) {
@@ -335,12 +370,12 @@ func newRepWithBuildCoercion(m *mpq.MPQ, game, message, tracker bool) (parsedRep
 		// find closest supported build
 		closest, ok := findClosestSupportedBaseBuild(bb)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w, metadata: {\"build\": %d}", ErrUnsupportedRepVersion, bb)
+			return nil, 0, &UnsupportedRepVersionError{Build: bb}
 		}
 		p = s2prot.GetProtocol(closest)
 		if p == nil {
 			// Should not happen but guard anyway
-			return nil, 0, fmt.Errorf("%w, metadata: {\"build\": %d, \"closest\": %d}", ErrUnsupportedRepVersion, bb, closest)
+			return nil, 0, &UnsupportedRepVersionError{Build: bb, Closest: closest}
 		}
 		coercedTo = closest
 	}
