@@ -6,8 +6,44 @@ Implementation of a byte buffer whose content can be accessed/interpreted by bit
 
 package s2prot
 
+import "errors"
+
+// errInvalidLength is panicked (and recovered by the decode entry points) when a
+// type's declared length cannot be backed by the bytes remaining in the buffer.
+// Decoders previously sized make() directly from these attacker-controlled
+// lengths, so a tiny crafted input could declare a huge array/blob/bitarray and
+// drive a multi-GB allocation (a fatal OOM that recover() cannot catch).
+var errInvalidLength = errors.New("s2prot: declared length exceeds remaining buffer")
+
+// clampSliceCap bounds the initial capacity used when decoding an array of a
+// declared (untrusted) length. Elements are appended as they are decoded, so the
+// up-front allocation stays small no matter how large the declared length is.
+func clampSliceCap(n int64) int {
+	const max = 1024
+	if n < max {
+		return int(n)
+	}
+	return max
+}
+
 // Bit masks having as many ones at the lowest bits as the index.
 var bitMasks = [...]byte{0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, 0xff}
+
+// bytesLeft reports the number of whole, unconsumed bytes in contents. It ignores
+// any bits still held in cache, so it never over-reports what remains.
+func (b *bitPackedBuff) bytesLeft() int {
+	if n := len(b.contents) - b.idx; n > 0 {
+		return n
+	}
+	return 0
+}
+
+// bitsLeft reports an upper bound on the number of bits still readable: the
+// cached bits plus the whole bytes remaining. Used to reject a declared length
+// that no valid input could satisfy before allocating from it.
+func (b *bitPackedBuff) bitsLeft() int {
+	return int(b.cacheBits) + b.bytesLeft()*8
+}
 
 // The wrapper around a []byte providing access by arbitrary number of bits.
 type bitPackedBuff struct {

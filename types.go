@@ -62,6 +62,12 @@ type typeInfo struct {
 	// For struct, and also for choice
 	fields []field // List of fields (in case of struct)
 
+	// tagIndex maps a struct field's tag to its index in fields. Built once at
+	// parse time and shared read-only across all decodes, so the versioned struct
+	// decoder no longer rebuilds this map for every struct instance it decodes
+	// (a hot path for tracker events). Only populated for s2pStruct types.
+	tagIndex map[int]int
+
 	// For array, also used for optional
 	typeid int // Type id (index) of the elements of the array
 }
@@ -137,6 +143,11 @@ func parseTypeInfo(s string) typeInfo {
 		// Copy a trimmed version of this to type info:
 		ti.fields = make([]field, len(fields))
 		copy(ti.fields, fields)
+		// Precompute the tag->index map once (used by the versioned struct decoder).
+		ti.tagIndex = make(map[int]int, len(ti.fields))
+		for i := range ti.fields {
+			ti.tagIndex[ti.fields[i].tag] = i
+		}
 	case s2pChoice: // ('_choice',[(0,2),{0:('None',91),1:('TargetPoint',93),2:('TargetUnit',94),3:('Data',6)}]),  #95
 		// Parameters: offset and bits which will provide the index integer value to choose
 		// from the following field list

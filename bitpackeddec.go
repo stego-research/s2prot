@@ -88,7 +88,10 @@ func (d *bitPackedDec) instance(typeid int) interface{} {
 		return s
 	case s2pChoice:
 		tag := int(readInt())
-		if tag > len(ti.fields) {
+		// Bounds: tag indexes ti.fields, so a valid tag is in [0, len). The
+		// original `tag > len(ti.fields)` was off by one (the versioned decoder
+		// uses >=), letting tag == len index one past the slice and panic.
+		if tag < 0 || tag >= len(ti.fields) {
 			return nil
 		}
 		f := ti.fields[tag]
@@ -98,14 +101,27 @@ func (d *bitPackedDec) instance(typeid int) interface{} {
 		return s
 	case s2pArr:
 		length := readInt()
-		arr := make([]interface{}, length)
-		for i := range arr {
-			arr[i] = d.instance(ti.typeid)
+		if length < 0 {
+			return nil
+		}
+		// Do not preallocate make([]interface{}, length) from the attacker-
+		// controlled length: a crafted input can declare a huge length and OOM-kill
+		// the process (a fatal runtime throw recover() cannot catch). Grow with
+		// append so memory tracks elements actually decoded; a length that outruns
+		// the buffer hits EOF (panic, recovered) after a bounded number of reads.
+		arr := make([]interface{}, 0, clampSliceCap(length))
+		for i := int64(0); i < length; i++ {
+			arr = append(arr, d.instance(ti.typeid))
 		}
 		return arr
 	case s2pBitArr:
 		// length may be > 64, so simple readBits() is not enough
 		length := int(readInt())
+		// length bits are read from the buffer; reject a length no input could back
+		// before sizing the (length+7)/8-byte buffer from it.
+		if length < 0 || length > b.bitsLeft() {
+			panic(errInvalidLength)
+		}
 		buf := make([]byte, (length+7)/8)    // Number of required bytes
 		copy(buf, b.readUnaligned(length/8)) // Number of whole bytes:
 		if remaining := byte(length % 8); remaining != 0 {
@@ -114,6 +130,10 @@ func (d *bitPackedDec) instance(typeid int) interface{} {
 		return BitArr{Count: length, Data: buf}
 	case s2pBlob:
 		length := readInt()
+		// length bytes are read aligned; reject before make([]byte, length).
+		if length < 0 || length > int64(b.bytesLeft()) {
+			panic(errInvalidLength)
+		}
 		return string(b.readAligned(int(length)))
 	case s2pOptional:
 		if b.readBits1() {
