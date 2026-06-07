@@ -456,10 +456,13 @@ func (p *Protocol) decodeEvents(d decoder, evtidTypeid int, etypes []EventType, 
 				tag := int(deltaTI.offset64 + bp.readBits(byte(deltaTI.bits)))
 				if tag < len(deltaTI.fields) && tag >= 0 {
 					f := deltaTI.fields[tag]
-					if v, ok := bp.instance(f.typeid).(int64); ok {
+					// Decode the field value exactly once: a second bp.instance call
+					// would consume more of the buffer and desync every later event.
+					switch v := bp.instance(f.typeid).(type) {
+					case int64:
 						loop += v
-					} else if s, ok := bp.instance(f.typeid).(Struct); ok {
-						for _, iv := range s {
+					case Struct:
+						for _, iv := range v {
 							if n, ok := iv.(int64); ok {
 								loop += n
 							}
@@ -493,10 +496,12 @@ func (p *Protocol) decodeEvents(d decoder, evtidTypeid int, etypes []EventType, 
 				tag := int(readVarInt(vd.bitPackedBuff))
 				if tag < len(deltaTI.fields) && tag >= 0 {
 					f := deltaTI.fields[tag]
-					if v, ok := vd.instance(f.typeid).(int64); ok {
+					// Decode the field value exactly once (see bit-packed path above).
+					switch v := vd.instance(f.typeid).(type) {
+					case int64:
 						loop += v
-					} else if s, ok := vd.instance(f.typeid).(Struct); ok {
-						for _, iv := range s {
+					case Struct:
+						for _, iv := range v {
 							if n, ok := iv.(int64); ok {
 								loop += n
 							}
@@ -508,19 +513,17 @@ func (p *Protocol) decodeEvents(d decoder, evtidTypeid int, etypes []EventType, 
 				// number of fields
 				for n := int(readVarInt(vd.bitPackedBuff)); n > 0; n-- {
 					tag := int(readVarInt(vd.bitPackedBuff))
-					var fsel *field
-					for i := range deltaTI.fields {
-						if deltaTI.fields[i].tag == tag {
-							fsel = &deltaTI.fields[i]
-							break
-						}
-					}
-					if fsel == nil {
-						// Unknown field; skip reading one instance generically
-						_ = vd.instance(tag) // best-effort
+					// Use the precomputed tag->index map (deltaTI is a struct here)
+					// rather than an O(n) scan per tag, matching the optimization in
+					// versionedDec.instance.
+					idx, ok := deltaTI.tagIndex[tag]
+					if !ok {
+						// Unknown field: skip its encoded value. (Treating the field
+						// tag as a typeid would index the wrong type info and desync.)
+						skipInstance(vd.bitPackedBuff)
 						continue
 					}
-					if v, ok := vd.instance(fsel.typeid).(int64); ok {
+					if v, ok := vd.instance(deltaTI.fields[idx].typeid).(int64); ok {
 						loop += v
 					}
 				}

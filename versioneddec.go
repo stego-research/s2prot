@@ -52,11 +52,14 @@ func (d *versionedDec) instance(typeid int) interface{} {
 			s[name] = val
 		}
 		length := int(readVarInt(b))
-		// Build tag->index map once to avoid O(n) scans per field
-		tagIndex := make(map[int]int, len(ti.fields))
-		for i := range ti.fields {
-			tagIndex[ti.fields[i].tag] = i
+		// A negative field count is malformed: the loop below would read no fields
+		// and leave the encoded fields unconsumed, desyncing the rest of the stream.
+		if length < 0 {
+			panic(errInvalidLength)
 		}
+		// tag->index map is precomputed once per type at parse time (ti.tagIndex),
+		// so this struct decode does not rebuild it per instance.
+		tagIndex := ti.tagIndex
 		for i := 0; i < length; i++ {
 			tag := int(readVarInt(b))
 			idx, ok := tagIndex[tag]
@@ -100,7 +103,10 @@ func (d *versionedDec) instance(typeid int) interface{} {
 	case s2pChoice:
 		b.readBits8() // Field type (3)
 		tag := int(readVarInt(b))
-		if tag >= len(ti.fields) {
+		if tag < 0 || tag >= len(ti.fields) {
+			// The choice's value still follows and is self-describing in the
+			// versioned format; skip it so the stream stays in sync.
+			skipInstance(b)
 			return nil
 		}
 		f := ti.fields[tag]
@@ -111,18 +117,33 @@ func (d *versionedDec) instance(typeid int) interface{} {
 	case s2pArr:
 		b.readBits8() // Field type (0)
 		length := readVarInt(b)
-		arr := make([]interface{}, length)
-		for i := range arr {
-			arr[i] = d.instance(ti.typeid)
+		// A negative length is malformed; abort rather than returning nil and
+		// leaving the encoded elements unconsumed (consistent with blob/bitarray).
+		if length < 0 {
+			panic(errInvalidLength)
+		}
+		// Grow with append instead of make([]interface{}, length): the length is
+		// attacker-controlled and preallocating from it can OOM-kill the process
+		// (a fatal throw recover() cannot catch). See bitPackedDec.instance.
+		arr := make([]interface{}, 0, clampSliceCap(length))
+		for i := int64(0); i < length; i++ {
+			arr = append(arr, d.instance(ti.typeid))
 		}
 		return arr
 	case s2pBitArr:
 		b.readBits8() // Field type (1)
 		length := int(readVarInt(b))
+		// Reject a length no input could back before make([]byte, (length+7)/8).
+		if length < 0 || length > b.bitsLeft() {
+			panic(errInvalidLength)
+		}
 		return BitArr{Count: length, Data: b.readAligned((length + 7) / 8)}
 	case s2pBlob:
 		b.readBits8() // Field type (2)
 		length := int(readVarInt(b))
+		if length < 0 || length > b.bytesLeft() {
+			panic(errInvalidLength)
+		}
 		return string(b.readAligned(length))
 	case s2pOptional:
 		b.readBits8() // Field type (4)
@@ -165,13 +186,25 @@ func skipInstance(b *bitPackedBuff) {
 	fieldType := b.readBits8()
 	switch fieldType {
 	case 0: // array
-		for i := readVarInt(b); i > 0; i-- {
+		n := readVarInt(b)
+		if n < 0 {
+			panic(errInvalidLength)
+		}
+		for ; n > 0; n-- {
 			skipInstance(b)
 		}
 	case 1: // bit array
-		b.readAligned((int(readVarInt(b)) + 7) / 8)
+		bits := int(readVarInt(b))
+		if bits < 0 || bits > b.bitsLeft() {
+			panic(errInvalidLength)
+		}
+		b.readAligned((bits + 7) / 8)
 	case 2: // blob
-		b.readAligned(int(readVarInt(b)))
+		n := int(readVarInt(b))
+		if n < 0 || n > b.bytesLeft() {
+			panic(errInvalidLength)
+		}
+		b.readAligned(n)
 	case 3: // choice
 		readVarInt(b) // tag
 		skipInstance(b)
@@ -180,7 +213,11 @@ func skipInstance(b *bitPackedBuff) {
 			skipInstance(b)
 		}
 	case 5: // struct
-		for i := readVarInt(b); i > 0; i-- {
+		n := readVarInt(b)
+		if n < 0 {
+			panic(errInvalidLength)
+		}
+		for ; n > 0; n-- {
 			readVarInt(b) // tag
 			skipInstance(b)
 		}
