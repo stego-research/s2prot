@@ -513,21 +513,17 @@ func (p *Protocol) decodeEvents(d decoder, evtidTypeid int, etypes []EventType, 
 				// number of fields
 				for n := int(readVarInt(vd.bitPackedBuff)); n > 0; n-- {
 					tag := int(readVarInt(vd.bitPackedBuff))
-					var fsel *field
-					for i := range deltaTI.fields {
-						if deltaTI.fields[i].tag == tag {
-							fsel = &deltaTI.fields[i]
-							break
-						}
-					}
-					if fsel == nil {
-						// Unknown field: skip its encoded value. (The previous
-						// vd.instance(tag) treated the field *tag* as a *typeid*,
-						// indexing the wrong type info and desyncing the stream.)
+					// Use the precomputed tag->index map (deltaTI is a struct here)
+					// rather than an O(n) scan per tag, matching the optimization in
+					// versionedDec.instance.
+					idx, ok := deltaTI.tagIndex[tag]
+					if !ok {
+						// Unknown field: skip its encoded value. (Treating the field
+						// tag as a typeid would index the wrong type info and desync.)
 						skipInstance(vd.bitPackedBuff)
 						continue
 					}
-					if v, ok := vd.instance(fsel.typeid).(int64); ok {
+					if v, ok := vd.instance(deltaTI.fields[idx].typeid).(int64); ok {
 						loop += v
 					}
 				}

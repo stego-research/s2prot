@@ -52,6 +52,11 @@ func (d *versionedDec) instance(typeid int) interface{} {
 			s[name] = val
 		}
 		length := int(readVarInt(b))
+		// A negative field count is malformed: the loop below would read no fields
+		// and leave the encoded fields unconsumed, desyncing the rest of the stream.
+		if length < 0 {
+			panic(errInvalidLength)
+		}
 		// tag->index map is precomputed once per type at parse time (ti.tagIndex),
 		// so this struct decode does not rebuild it per instance.
 		tagIndex := ti.tagIndex
@@ -99,6 +104,9 @@ func (d *versionedDec) instance(typeid int) interface{} {
 		b.readBits8() // Field type (3)
 		tag := int(readVarInt(b))
 		if tag < 0 || tag >= len(ti.fields) {
+			// The choice's value still follows and is self-describing in the
+			// versioned format; skip it so the stream stays in sync.
+			skipInstance(b)
 			return nil
 		}
 		f := ti.fields[tag]
@@ -109,8 +117,10 @@ func (d *versionedDec) instance(typeid int) interface{} {
 	case s2pArr:
 		b.readBits8() // Field type (0)
 		length := readVarInt(b)
+		// A negative length is malformed; abort rather than returning nil and
+		// leaving the encoded elements unconsumed (consistent with blob/bitarray).
 		if length < 0 {
-			return nil
+			panic(errInvalidLength)
 		}
 		// Grow with append instead of make([]interface{}, length): the length is
 		// attacker-controlled and preallocating from it can OOM-kill the process
@@ -176,7 +186,11 @@ func skipInstance(b *bitPackedBuff) {
 	fieldType := b.readBits8()
 	switch fieldType {
 	case 0: // array
-		for i := readVarInt(b); i > 0; i-- {
+		n := readVarInt(b)
+		if n < 0 {
+			panic(errInvalidLength)
+		}
+		for ; n > 0; n-- {
 			skipInstance(b)
 		}
 	case 1: // bit array
@@ -199,7 +213,11 @@ func skipInstance(b *bitPackedBuff) {
 			skipInstance(b)
 		}
 	case 5: // struct
-		for i := readVarInt(b); i > 0; i-- {
+		n := readVarInt(b)
+		if n < 0 {
+			panic(errInvalidLength)
+		}
+		for ; n > 0; n-- {
 			readVarInt(b) // tag
 			skipInstance(b)
 		}
